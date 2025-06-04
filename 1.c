@@ -24,5 +24,11 @@ int main(void){
 	
 	//创建线程池，包含4个工作线程
 	Thread* pool = thread_pool_reate(4);
+	if(!pool){
+	    fprintf(stderr, "Error:创建线程池失败\n");
+		return 1;
+	}
+
+	//添加10个任务到线程池
 	return 0;
 }
