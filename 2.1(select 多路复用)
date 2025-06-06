@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+int main() {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in server_addr = {0};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+
+    bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    listen(server_socket, 5);
+
+    fd_set readfds, masterfds;
+    FD_ZERO(&masterfds);
+    FD_SET(server_socket, &masterfds);
+    int max_fd = server_socket;
+
+    while (1) {
+        readfds = masterfds;
+        select(max_fd + 1, &readfds, NULL, NULL, NULL);
+
+        // 检查所有描述符
+        for (int i = 0; i <= max_fd; i++) {
+            if (FD_ISSET(i, &readfds)) {
+                if (i == server_socket) {  // 新连接
+                    struct sockaddr_in client_addr = {0};
+                    socklen_t client_size = sizeof(client_addr);
+                    int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_size);
+                    FD_SET(client_socket, &masterfds);
+                    if (client_socket > max_fd) max_fd = client_socket;
+                } else {  // 客户端数据
+                    char buffer[1024];
+                    int bytes = recv(i, buffer, sizeof(buffer), 0);
+                    if (bytes <= 0) {
+                        close(i);
+                        FD_CLR(i, &masterfds);
+                    } else {
+                        send(i, buffer, bytes, 0);
+                    }
+                }
+            }
+        }
+    }
+}
