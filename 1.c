@@ -1,4 +1,7 @@
 #include<stdio.h>
+#include<stdlib.h>
+#include<pthread.h>
+#include<unistd.h>
 
 //任务节点结构
 typedef struct Task{
@@ -30,9 +33,9 @@ static void* thread_worker(void *arg);
 
 //创建线程池
 ThreadPool* thread_pool_create(int thread_count){
-	ThreadPool *pool = (ThreadPool*)malloc(sizeof(threadPool));
+	ThreadPool *pool = (ThreadPool*)malloc(sizeof(ThreadPool));
 	if(!pool){
-	    frpintf(stderr,"Error:无法分配线程池内存\n");
+	    fprintf(stderr,"Error:无法分配线程池内存\n");
 	    return NULL;
 	}
 	//初始化线程池参数
@@ -44,7 +47,7 @@ ThreadPool* thread_pool_create(int thread_count){
 	pool->started = 0;
 
 	//初始化锁和条件变量
-	if(pthread_mutex_init(&pool->lock, NULL) != 0 || pthread_cond_init(&pool->notify != 0)){
+	if(pthread_mutex_init(&pool->lock, NULL) != 0 || pthread_cond_init(&pool->notify, NULL) != 0){
 	    fprintf(stderr,"Error:初始化锁或条件变量失败\n");
 	    free(pool);
 	    return NULL;
@@ -64,7 +67,7 @@ ThreadPool* thread_pool_create(int thread_count){
 	        fprintf(stderr,"Error:创建线程%d失败\n", i);
 		return NULL;
 	    }
-	    pool->start++;
+	    pool->started++;
 	}
 	return pool;
 }
@@ -83,7 +86,7 @@ int thread_pool_add_task(ThreadPool* pool, void(*function)(void*), void* arg){
 	}
 
 	//创建新任务
-	*Task task = (Task*)malloc(sizeof(Task));
+	Task* task = (Task*)malloc(sizeof(Task));
 	if(!task){
 	    pthread_mutex_unlock(&pool->lock);
 	    return -1;
@@ -211,7 +214,7 @@ void example_task(void* arg){
 int main(void){
 	
 	//创建线程池，包含4个工作线程
-	Thread* pool = thread_pool_create(4);
+	ThreadPool* pool = thread_pool_create(4);
 	if(!pool){
 	    fprintf(stderr, "Error:创建线程池失败\n");
 	    return 1;
@@ -221,7 +224,7 @@ int main(void){
 	for(int i=0; i<10; i++){
 	    int* task_id = (int*)malloc(sizeof(int));
 	    *task_id = i;
-	    if(pthread_pool_add_task(pool, example_task, task_id)!=0){
+	    if(thread_pool_add_task(pool, example_task, task_id)!=0){
 	        fprintf(stderr, "Error:添加任务#%d失败\n");
 		free(task_id);
 	    }
@@ -232,6 +235,6 @@ int main(void){
 	    fprintf(stderr, "Error:销毁线程池失败\n");
 	    return 1;
 	}
-	printf("所有任务执行完毕,线程池已销毁");
+	printf("所有任务执行完毕,线程池已销毁\n");
 	return 0;
 }
